@@ -1,0 +1,370 @@
+---
+title: "OD Transport Data Visualization"
+format: html
+---
+
+# Introduction
+
+This session builds on “Origin-destination data analysis” by examining data visualisation techniques for OD transport data.
+
+By the end of this session, you should be able to:
+
+- Load and preprocess origin-destination flow data
+- Create visualizations using OD desire lines and proportional symbol maps
+- Compare transport flows across different modes (walking, driving, and cycling)
+- Analyse and visualise temporal changes in OD flows, using data from the London Cycle Hire System as an example
+
+# Setup 
+
+```{r}
+#| label: setup
+#| message: false
+#| warning: false
+#| results: hide
+
+library(sf)        # Simple Features - for reading, writing, and manipulating vector spatial data 
+library(tmap)      # Thematic Maps - for creating attractive static and interactive maps with layered geographic data
+library(stplanr)   # Sustainable Transport Planning - specialised tools for transport analysis and route planning
+library(tidyverse) # Grammar of Graphics - powerful and flexible data visualization package 
+library(ggspatial) # Spatial extensions for ggplot2
+```
+
+
+```{r}
+#| label: setup2
+
+ # Set interactive mapping mode
+tmap_mode("view")
+
+```
+
+# OD Flow Maps and Visualization
+
+OD flow maps are useful for understanding the volume of travel between origins and destinations. 
+
+This section introduces:
+- Loading desire lines (flows) data from a GeoJSON file.
+- Visualising these lines with widths or colors proportional to demand.
+
+
+```{r}
+#| label: flowmap1
+
+# Load Demand Data and select relevant columns
+desire_lines = read_sf("https://github.com/ITSLeeds/TDS/releases/download/22/NTEM_flow.geojson") |>
+  select(from, to, all, walk, drive, cycle)
+
+ dim(desire_lines)
+
+ # Take the top 50 car trips for demonstration
+ desire_lines_top = desire_lines |>
+    arrange(desc(drive)) |>
+    head(100)
+
+# Quick map to see the distribution of car trips
+tm_shape(desire_lines_top) +
+  tm_lines(
+    lwd = "drive",
+    lwd.scale = tm_scale_continuous(values.scale = 9)
+  ) +
+  tm_layout(legend.bg.color = "white")
+
+```
+
+# Proportional Symbol Flow Maps
+
+
+Now, an alternative method: proportional symbols at origin or destination points.
+This is useful when you want to quickly see where demand is concentrated.
+
+```{r}
+#| label: flowmapsymb
+
+# Summarize total flows by origin
+origin_flows = desire_lines |>
+    group_by(from) |>
+    summarise(
+        total_drive = sum(drive, na.rm = TRUE),
+        total_walk = sum(walk, na.rm = TRUE),
+        total_cycle = sum(cycle, na.rm = TRUE),
+        `% drive` = total_drive / sum(all, na.rm = TRUE),
+        `% cycle` = total_cycle / sum(all, na.rm = TRUE),
+        geometry = st_centroid(st_union(geometry)) 
+    )
+
+# Simple map for proportional circles for cycle volumes
+
+tm_shape(origin_flows) +
+    tm_bubbles(
+        size = "total_drive",
+        size.scale = tm_scale_intervals(values.scale = 2, values.range = c(0.5, 2)),
+        fill = "% drive",
+        fill.scale = tm_scale_continuous(values = "brewer.reds")) +
+    tm_title("Proportional Symbol Map of Drive Demand by Origin")
+
+```
+
+
+
+
+```{r}
+#| label: flowmapsymb2
+
+# Simple map for cycling
+tm_shape(origin_flows) +
+    tm_bubbles(
+        size = "total_cycle",
+        size.scale = tm_scale_intervals(values.scale = 2, values.range = c(0.5, 2)),
+        fill = "% cycle",
+        fill.scale = tm_scale_continuous(values = "brewer.reds")) +
+    tm_title("Proportional Symbol Map of Cycle Demand by Origin")
+
+
+```
+
+Each origin is represented by a circle whose radius and color intensity reflect the total number of driving trips.
+
+
+
+# Mode-Specific Analysis
+
+We have have columns walk, drive, cycle in desire_lines.
+We can map them separately or side-by-side.
+We can also color lines by the dominant mode.
+
+
+
+```{r}
+#| label: modespec1
+
+# Create 3 sepeerate maps: drive, walk, cycle
+tmap_mode("plot")
+
+m_drive = tm_shape(desire_lines_top) +
+    tm_lines(
+        lwd = "drive",
+        lwd.scale = tm_scale_continuous(values.scale = 9),
+        col = "red"
+    ) +
+    tm_title("Driving flows")
+
+m_walk = tm_shape(desire_lines_top) +
+  tm_lines(
+    lwd = "walk",
+    lwd.scale = tm_scale_continuous(values.scale = 9),
+    col = "green"
+  ) +
+  tm_title("Walking Flows")
+
+m_cycle = tm_shape(desire_lines_top) +
+  tm_lines(
+    lwd = "cycle",
+    lwd.scale = tm_scale_continuous(values.scale = 9),
+    col = "blue"
+  ) +
+  tm_title("Cycling Flows")
+
+tmap_arrange(m_drive, m_walk, m_cycle, ncol=3)
+
+```
+
+This tmap_arrange() will output a single figure with three columns, each illustrating flows by one mode.
+In general, driving flows are much thicker on longer corridors, while walking flows are concentrated in the city center. 
+
+Walking is also the most frequent journey type overall, with some places having approx 8000 journeys overall, compared to 2,500 and 350 for driving and cycling respectively.
+
+
+# Analysing origin-destination data in London Cycle Hire System
+
+This section uses origin–destination data from the London Cycle Hire System (LCHS). Specifically, examining how a London Underground strike on July 9, 2015 influenced cyclists’ travel patterns.
+
+Public transport disruptions are becoming increasingly common, triggered by various factors including:
+
+* Infrastructure maintenance requirements
+* Natural disasters
+* Large-scale events (festivals, strikes, etc.)
+
+By analyzing how people adapt their travel patterns during such events, we can better inform urban transport planning and decision-making strategies. To assess how cycling OD patterns change during disruptions, we compare LCHS data from the strike day with two reference days: July 2, 2015 (7 days before) and July 16, 2015 (7 days after).
+
+For this section, we'll be using cleaned cycling data originally sourced from TfL's open data portal (cycling.data.tfl.gov.uk). 
+
+Let's begin by loading the following two datasets
+
+```{r}
+#| label: lchs-setup
+#| echo: true
+#| output: false
+
+# Load bike docking station locations with spatial geometry
+bike_docking_stations = read_sf("https://github.com/itsleeds/tds/releases/download/2025/p3-london-bike_docking_stations.geojson")
+# Load trip data as regular CSV (no spatial data, but contains origin/destination IDs)
+bike_trips = read.csv("https://github.com/itsleeds/tds/releases/download/2025/p3-london-bike_trips.csv")
+```
+
+```{r}
+# Examine the structure and first few rows of each dataset
+head(bike_docking_stations)  # Show first 6 rows of station data
+dim(bike_docking_stations)   # Show dimensions (rows x columns)
+head(bike_trips)             # Show first 6 rows of trip data
+dim(bike_trips)              # Show dimensions of trip data
+```
+
+Examine `bike_trips` data, which covers three specific Thursdays: July 2nd, July 9th, and July 16th, 2015. July 9th marks the London Underground strike, while the other two dates serve as comparison points one week before and after the strike. 
+
+During the Tube Strike, some people adopted bikeshare to replace the Tube travel, hence we should be able to observe some differences in trip account.
+
+```{r} 
+
+# Proces trip data to identify strike vs non-strike days
+bike_trips = bike_trips |>
+    mutate(date = date(start_time)) |> #Extract date from datetime 
+    mutate(type_day = case_when(
+        date == as.Date("2015-07-09") ~ "Strike Day",
+        TRUE ~ "Non-Strike Day"
+    ))
+
+# Create bar chart comparing trip counts on different days
+bike_trips |>
+    group_by(date, type_day) |>
+    summarise(count = n()) |>
+    ggplot() +
+    geom_bar(aes(
+        x = as.factor(date),         # Date on x-axis (as factor for discrete bars)
+        y = count,                   # Trip count on y-axis
+        fill = type_day              # Color bars by strike/non-strike day
+    ), stat = "identity") +        # Use actual values (not counts of observations)
+  xlab("Date") +
+  ylab("Count of bike trips") +
+  labs(fill = "Type of day")
+```
+
+
+The increase in trips is likely unevenly distributed by time, so it would be useful to examine the changes and differences by hour. This will help us identify when the most significant changes occur.
+
+```{r}
+# Analyse hourly patterns across the three days
+bike_trips |>
+  mutate(
+    hour = hour(start_time),     # Extract hour from start time
+    date = as.factor(date)       # Convert date to factor for grouping
+  ) |>
+  group_by(date, hour) |>        # Group by date and hour
+  summarise(count = n()) |>      # Count trips per hour per day
+  ggplot() +
+  geom_line(aes(x = hour, y = count, color = date, group = date), 
+            size = 1, alpha = .6) +                    # Line
+  geom_point(aes(x = hour, y = count, color = date), 
+             size = 2) +                               # Add points for emphasis
+  scale_x_continuous(breaks = seq(0, 23, by = 4))     # Show every 4th hour on x-axis
+```
+
+
+ Whist above temporal analysis provide useful summaries, visual analysis of the origin-destination flow changes allow us to characterise with greater richness the nature of changes in response to the strike events. Let' try to calculate the changes in od flow and map them!
+
+To break the task down, we will
+1. Calculate the frequeny of each origin-destination pair on the strike day
+2. Calculate the average frequancy of each origin-destination pair on the non-strike day
+3. find out the differences
+
+```{r}
+# 1. Calculate trip frequencies for each O-D pair on strike day
+od_strike = bike_trips |>
+  filter(type_day == "Strike Day") |>                 # Only strike day data
+  group_by(start_station_id, end_station_id) |>       # Group by origin-destination pairs
+  summarise(count_strike = n())                       # Count trips for each O-D pair
+
+# 2. Calculate average trip frequencies for each O-D pair on non-strike days
+od_non_strike = bike_trips |>
+  filter(type_day == "Non-Strike Day") |>             # Only non-strike day data
+  group_by(start_station_id, end_station_id) |>       # Group by origin-destination pairs
+  summarise(count_non_strike = n() / 2)               # Divide by 2 since we have 2 non-strike days
+```
+
+To obtain the changes, we will need to join the origin-destination pairs in the two dataframe we just created. 
+
+
+```{r}
+# Join the two dataframes to compare strike vs non-strike patterns
+od_change = full_join(od_strike, od_non_strike, 
+                      by = c("start_station_id", "end_station_id")) |>
+  replace_na(list(count_strike = 0, count_non_strike = 0))  # Replace NA with 0
+
+# Calculate the change in trip count and remove self-loop trips
+od_change = filter(od_change, start_station_id != end_station_id) |>  # Remove trips from station to itself
+  mutate(count_change = count_strike - count_non_strike) |>           # Calculate difference
+  arrange(desc(count_change))                                         # Sort by largest increases first
+```
+
+Let have a look at the joined result:
+
+```{r}
+head(od_change) # Show the OD pairs with largest increases in trips
+```
+
+We have succesfully joined the data, and the output `od_change` has both the trip count on strike day (`count_strike`) and non-strike day (`count_non_strike`), in addition, a new variable of `count_change` is created. Next, let clean the output further and create the od lines
+
+```{r}
+# Focus on inter-station trips (not self-loops) and sort by change
+od_inter_change = filter(od_change, start_station_id != end_station_id) |> 
+  arrange(desc(count_change))
+
+# Create spatial lines connecting origin-destination pairs
+# od2line() function from stplanr package creates desire lines from O-D data
+change_desire_lines = od2line(od_change, bike_docking_stations)
+```
+
+
+We are particularly interested in identifying origin-destination pairs where the number of trips has increased. To focus on these, we use the filter function to select desire lines with at least one additional trip on the strike day. You can adjust the threshold (currently set to 1) as needed.
+
+```{r}
+# Filter to show only O-D pairs that increased during the strike
+change_to_plot = change_desire_lines |>
+  filter(count_change >= 5) |>      # Only show increases of 1 or more trips
+  arrange((count_change))             # Sort from small to largest increase
+```
+
+```{r}
+# Create a map showing changes in bike trip patterns during the strike
+ggplot() +
+  geom_sf(
+    data = change_to_plot,
+    aes(
+      colour = count_change,        # Line color represents magnitude of change
+      alpha = count_change,         # Line transparency based on change magnitude
+      linewidth = count_change      # Line thickness based on change magnitude
+    )
+  ) +
+  scale_colour_viridis_c(option = "C") +                                # Viridis color palette
+  scale_linewidth_binned(range = c(0.01, 1.6), guide = "legend") +     # Set line width range
+  scale_alpha(range = c(0.001, 0.7), guide = "legend") +               # Set transparency range
+  annotation_scale(location = "br", width_hint = 0.3) +                # Add scale bar (bottom right)
+  annotation_north_arrow(
+    location = "tl", which_north = "true",                             # Add north arrow (top left)
+    style = north_arrow_fancy_orienteering()
+  ) +
+  theme_void()  # Remove axis labels and background grid
+```
+
+```{r}
+library(tmap)
+
+tmap_mode("view")
+
+tm_shape(change_to_plot) +
+  tm_lines(
+    col = "count_change",
+    col.scale = tm_scale_continuous(values = "viridis"),
+    lwd = "count_change",
+    lwd.scale = tm_scale_continuous(values.scale = 4),
+    col_alpha = "count_change",
+    alpha.scale = tm_scale_continuous(values.scale = c(0.01, 0.7))
+  ) +
+  tm_layout(legend.outside = TRUE)
+
+
+
+```
+
+
+
+

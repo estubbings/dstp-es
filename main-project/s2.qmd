@@ -1,0 +1,386 @@
+---
+title: "Routing and route network analysis"
+format: html
+---
+
+# Introduction
+
+This session demonstrates routing and network analysis techniques. By the end of this session, you should be able to:
+
+- Understand the principles of routing and network analysis
+- Use routing services such as OpenTripPlanner for multi-modal routing
+- Create and analyze route networks
+- Apply network centrality measures
+
+# Prerequisite Setup
+
+Install packages necessary.
+```{r}
+#| label: pak
+#| eval: false
+if (!require("pak")) install.packages("pak")
+pak::pkg_install(c("sf", "tidyverse", "stplanr", "dodgr", "opentripplanner", "tmap", "osmextract", "lwgeom"))
+```
+
+ Load the libraries for use in the session.
+
+```{r}
+#| label: lib
+#| eval: false
+#| message: false
+#| warning: false
+#| results: hide
+library(sf)
+library(tidyverse)
+library(stplanr)
+library(dodgr)
+library(opentripplanner)
+library(tmap)
+library(osmextract)
+library(lwgeom)
+tmap_mode("plot")
+```
+
+
+# OpenTripPlanner routing
+
+OpenTripPlanner (OTP) is a powerful open-source routing engine that supports multi-modal transportation planning.
+
+## Connect to OTP
+
+```{r}
+#| label: otp-con
+#| eval: false
+otpcon = otp_connect(
+    hostname = "otp.robinlovelace.net",
+    ssl = TRUE,
+    port = 443,
+    router = "west-yorkshire"
+)
+
+```
+
+## Basic Routing
+```{r}
+#| label: otp-sing
+#| eval: false
+ 
+ # Create a simple walking route
+ route_walk = otp_plan(
+    otpcon = otpcon,
+    fromPlace = c(-1.55555, 53.81005), #long, lat
+    toPlace = c(-1.54710, 53.79519),
+    mode = "WALK"
+ )
+
+```
+
+## Multi Modal Routing
+
+```{r}
+#| label: otp-multi
+#| eval: false
+
+# Public transport route
+route_transit = otp_plan(
+  otpcon = otpcon,
+  fromPlace = c(-1.55555, 53.81005),
+  toPlace = c(-1.54710, 53.79519),
+  mode = c("WALK", "TRANSIT")
+)
+
+# Cycling with public transport
+route_bike_transit = otp_plan(
+  otpcon = otpcon,
+  fromPlace = c(-1.55555, 53.81005),
+  toPlace = c(-1.54710, 53.79519),
+  mode = c("BICYCLE", "TRANSIT")
+)
+
+```
+
+# Working with desire lines
+
+Desire lines represent travel demand between origin-destination pairs.
+
+## Load OD Data
+
+Import and apply basic preprocessing steps to desire lines from the National Trip End Model. Keep the raw data unchanged for reproducibility.
+
+```{r}
+#| label: des-load
+#| eval: false
+
+# Load desire lines
+desire_lines_raw = read_sf("https://github.com/ITSLeeds/TDS/releases/download/22/NTEM_flow.geojson")
+desire_lines = desire_lines_raw |> 
+    select(from, to, all, walk, drive, cycle)
+
+#Load zone centroids
+centroids = read_sf("https://github.com/ITSLeeds/TDS/releases/download/22/NTEM_cents.geojson")
+
+```
+
+
+Also create a subet for demo purposes (visualisation).
+```{r}
+#| label: des-load2
+#| eval: false
+
+#Filter for top 5 desire lines by total trips
+desire_top = desire_lines |>
+    slice_max(order_by = all, n = 20)
+```
+
+## Visualizing desire lines
+
+Visualising the desire lines in West Yorkshire, plus locations.
+
+```{r}
+#| label: des-vis
+#| eval: false
+
+tm_shape(desire_lines) + 
+    tm_lines(
+        col = 'all',
+        lwd = "all",
+        lwd.scale = tm_scale_continuous(values.scale = 10),
+        col.scale = tm_scale_continuous(values = "-viridis")
+    )+
+    tm_shape(centroids) + 
+    tm_dots(fill = "red", size = 0.5)
+
+```
+
+You can also extract start and end points as follows.
+
+```{r}
+#| label: des-sel
+#| eval: false
+
+fromPlace = sf::st_sf(
+    data.frame(id = desire_top$from),
+    geometry = lwgeom::st_startpoint(desire_top)
+)
+
+toPlace = sf::st_sf(
+    data.frame(id = desire_top$to),
+    geometry = lwgeom::st_endpoint(desire_top)
+)
+
+```
+
+## Calculating routes
+
+```{r}
+#| label: des-route
+#| eval: false
+
+# Calculate driving routes for top desire lines
+
+routes_drive_top = otp_plan(
+  otpcon = otpcon,
+  fromPlace = fromPlace,
+  toPlace = toPlace,
+  fromID = fromPlace$id,
+  toID = toPlace$id,
+  mode = "CAR"
+)
+
+```
+
+## Visualizing routes
+
+Top 20 routes, selected from the desire_top created earlier.
+
+```{r}
+#| label: des-route-vis
+#| eval: false
+
+tm_shape(routes_drive_top) +
+  tm_lines(col = "blue", lwd = 3)
+
+```
+
+
+# Route network analysis
+
+Route networks aggregate individual routes to show cumulative traffic flow.
+
+## Joining routes to create a route network
+
+```{r}
+#| label: rna-load
+#| eval: false
+
+# Load more comprehensive route data
+routes_drive = read_sf("https://github.com/ITSLeeds/TDS/releases/download/22/routes_drive.geojson")
+routes_transit = read_sf("https://github.com/ITSLeeds/TDS/releases/download/22/routes_transit.geojson")
+
+```
+ 
+ Join this with desire lines data to get trip counts associated with each route
+
+```{r}
+#| label: rna-join
+#| eval: false
+
+names(desire_lines)
+nrow(desire_lines)
+names(routes_drive)
+nrow(routes_drive)
+nrow(routes_transit)
+
+```
+
+
+```{r}
+#| label: rna-joind
+#| eval: false
+
+routes_drive_joined = dplyr::left_join(
+    routes_drive |> 
+        rename(from = fromPlace, to = toPlace),
+    desire_lines |> 
+        sf::st_drop_geometry()
+)
+```
+
+```{r}
+#| label: rna-joint
+#| eval: false
+
+routes_transit_joined = dplyr::left_join(
+    routes_transit |> 
+        rename(from = fromPlace, to = toPlace),
+    desire_lines |> 
+        sf::st_drop_geometry()
+)
+```
+
+
+## Aggregating routes
+
+Create route network by aggregating overlapping routes
+
+```{r}
+#| label: rna-agg
+#| eval: false
+
+rnet_drive = overline(routes_drive_joined, "drive")
+```
+
+# Visualizing route networks
+
+```{r}
+#| label: rna-viz
+#| eval: false
+
+tm_shape(rnet_drive) +
+    tm_lines(
+        col = "drive",
+        col.scale = tm_scale_intervals(values = "-viridis", style = "jenks"),
+        lwd = 2
+    )
+
+```
+
+
+# Network centrality 
+
+Network centrality measures help identify critical infrastructure.
+
+## Preparing network data
+
+```{r}
+#| label: nca-prep
+#| eval: false
+zones = zonebuilder::zb_zone("Leeds", n_circles = 3)
+study_area = zones |>
+  sf::st_union()
+extra_tags = c(
+  "maxspeed",
+  "lit",
+  "cycleway"
+)
+roads = osmextract::oe_get_network(
+  mode= "driving",
+  place = study_area,
+  boundary = study_area,
+  boundary_type = "clipsrc",
+  extra_tags = extra_tags
+)
+
+# Filter for main roads
+roads = roads |>
+  filter(!is.na(highway)) |>
+  filter(highway %in% c("primary", "secondary", "tertiary", "residential", "unclassified")) |>
+  sf::st_cast("LINESTRING") 
+
+# Create network graph
+graph = weight_streetnet(roads)
+```
+
+
+## Calculating Centrality
+```{r}
+#| label: nca-cent
+#| eval: false
+
+contracted_graph = graph |> dodgr::dodgr_contract_graph()
+  
+
+# Calculate betweenness centrality
+centrality = dodgr_centrality(contracted_graph)
+```
+
+
+```{r}
+#| label: nca-cent2
+#| eval: false
+# Convert back to spatial format
+
+centrality_sf = dodgr_to_sf(centrality)
+
+```
+
+## Visualizing centrality
+```{r}
+#| label: nca-vis
+#| eval: false
+
+tm_shape(centrality_sf) +
+    tm_lines(
+        col = "centrality",
+        col.scale = tm_scale_intervals(values = "-viridis", style = "fisher"),
+        lwd = 3
+    )
+```
+
+
+# Exercises
+
+## Ex1: Basic Routing
+
+1. Connect to OpenTripPlanner server (can only use west yorkshire)
+
+```{r}
+#| label: ex1
+#| eval: false
+
+otpcon = otp_connect(
+  hostname = "otp.robinlovelace.net",
+  ssl = TRUE,
+  port = 443,
+  router = "west-yorkshire"
+)
+
+```
+
+2. Calculate a walking route 
+
+
+```{r}
+head(routes_transit)
+
+```
