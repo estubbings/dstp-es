@@ -1,16 +1,32 @@
 ---
-title: "Session 1"
+title: "Finding, importing and cleaning transport datasets"
 ---
 
-## Checks
+# Introduction
 
-### From Session 1
+In this session, we will explore how to find, download, import, and clean transport-related datasets. Transport data comes from various sources such as government agencies, open data portals, and crowd-sourced platforms. We will learn practical techniques using R to access and prepare this data for analysis.
+
+This session covers:
+
+- Downloading datasets from OpenStreetMap
+- Importing data into R
+- Basic data cleaning and exploration
+- Hands-on exercises
+
+
+The first part of this is directly adapted from the information from Robin. The exercises are all my own work!
+
+# Prerequisites
+
+Before starting, ensure you have the necessary packages installed:
 
 ```{r}
 #| label: r-test
-#| output: false
+#| message: false
+#| warning: false
+#| results: hide
 options(repos = c(CRAN = "https://cloud.r-project.org"))
-if (!require("pYak")) install.packages("pak")
+if (!require("pak")) install.packages("pak")
 pkgs = c(
   "sf",
   "tidyverse",
@@ -20,42 +36,11 @@ pkgs = c(
   "stats19",
   "pct"
 )
-pak::pkg_install(pkgs)
-```
-
-```{r}
-#| label: r-test1
-#| output: false
-sapply(pkgs, require, character.only = TRUE)
-
-```
-
-
-### From prerequisites
-
-
-
-```{r}
-#| label: r-test2
-#| message: false
-#| warning: false
-#| results: hide
-options(repos = c(CRAN = "https://cloud.r-project.org"))
-if (!require("pak")) install.packages("pak")
-pkgs = c(
-    "sf",
-    "tidyverse",
-    "tmap",
-    "stats19",
-    "stplanr",
-    "osmextract",
-    "zonebuilder"
-)
 pak::pak(pkgs)
 ```
 
 ```{r}
-#| label: r-test3
+#| label: r-test1
 #| message: false
 #| warning: false
 #| results: hide
@@ -82,8 +67,208 @@ osm_network |>
   select(maxspeed) |>
   plot()
 sf::write_sf(study_area, "leeds_study_area.geojson")
+```
 
+
+# Downloading transport datasets
+
+## OpenStreetMap Data
+
+OpenStreetMap (OSM) provides global geographic data with a focus on human-made entities, including roads.
+It is therefore very useful for quickly obtaining road network data for transport analysis.
+A disadvantage of OSM data is that it can be inconsistent in quality and coverage, depending on the area, but for many applications these disadvantages are outweighed by the ease of access and free availability of the data.
+
+The `osmextract` package allows you to download and extract specific features.
+
+Below is code to download the cycleways in North Yorkshire and creating a map showing them- edited from the original West Yorkshire.
+
+'lit' means if there are street lighting and the 'maxspeed' is the speed limit. It can be used for plotting on the map. 
+
+```{r}
+#| label: download-cycle
+#| eval: false 
+library(osmextract)
+library(sf)
+
+# Download cycleways in West Yorkshire
+north_yorkshire_cycleways = oe_get(
+  # force_download = TRUE,
+  place = "North Yorkshire",
+  extra_tags = c("maxspeed", "lit", "cycleway"),
+  query = "SELECT * FROM lines WHERE highway IN ('cycleway', 'path')" #SQL syntax for identifying data
+)
+plot(st_geometry(north_yorkshire_cycleways))
+```
+
+We can also download other spatial data. E.g. the code below downloads amenities.
+
+The "#| eval: false" line tells quarto to show the code but not evaluate it when rendering the document, as we don't need amenities for this project. 
+
+
+```{r}
+#| label: download-amenity
+#| eval: false 
+library(osmextract)
+library(sf)
+
+# Download amenities in West Yorkshire
+west_yorkshire_amenities = oe_get(
+  layer = "points", #We want the point location
+  place = "West Yorkshire",
+  extra_tags = c("amenity")
+)
+plot(st_geometry(west_yorkshire_amenities))
+```
+
+Below is some additional code using dplyr that can be used to get a table showing how many of each amenity there are, e.g. 66 banks and 376 atms.
+
+## Road Traffic Casualty Data (STATS19)
+
+Data on colliosions, casualties and vehicles from the DfT.
+
+Edited to use 2022 data.
+
+```{r}
+#| label: download-stats19
+#| eval: false 
+library(stats19)
+
+# Download 2022 collision data
+collisions = get_stats19(year = 2022, type = "collisions")
+```
+
+```{r}
+#| label: download-stats191
+#| eval: false 
+# Download casualty data
+casualties = get_stats19(year = 2022, type = "cas")
+```
+
+```{r}
+#| label: download-stats192
+#| eval: false 
+# Download vehicle data
+vehicles = get_stats19(year = 2022, type = "veh")
+```
+
+
+## Origin-Destination Data 
+
+The 'pct' package provides access to the Propensity to Cycle Tool data, which includes origin-destination flows.
+
+Below downloads desire lines (of cycling) for Manchester. Print the local authorities to ensure that manchester was correctly identified. 
+
+```{r}
+#| label: download-odd
+#| eval: false 
+library(pct)
+
+# Downloads desire lines for Manchester
+manchester_desire_lines = get_pct_lines(region = "greater-manchester")
+
+print(unique(manchester_desire_lines$lad_name1))
+```
+
+## Boundary and Census Data
+
+Geographic boundaries and census data can be downloaded directly from the ONS Geoportal or custom dataset tool.
+
+Load the data directly from https://geoportal.statistics.gov.uk/ as follows.
+
+```{r}
+#| label: download-census
+#| eval: false 
+
+library(sf)
+# Download LSOA boundaries
+url = "https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/Lower_layer_Super_Output_Areas_December_2021_Boundaries_EW_BFE_V10/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson"
+lsoa_boundaries = st_read(url)
+```
+
+The above has been taking a long time. Instead you can load the data directly from https://geoportal.statistics.gov.uk/. This allows you to download the geojsns from the open geography portal as I have done previously.
+
+
+
+All results from the census can be obtained from [nomis](https://www.nomisweb.co.uk/). It is possible to obtain the data programmatically in R using [`nomisr`](https://docs.ropensci.org/nomisr/).
+
+# Cleaning Data
+
+Once downloaded, data often needs cleaning for missing values, inconsistent formates and inconsistent coordinate systems.
+
+## Basic Cleaning Example
+
+```{r}
+#| label: cleaning-basic
+#| eval: false
+
+# Clean collision data
+collisions_clean = collisions |> 
+  # Remove rows with missing st_coordinates
+  drop_na(location_easting_osgr, location_northing_osgr) |>
+  # Convert to sf object (spatial)
+  st_as_sf(coords = c("location_easting_osgr", "location_northing_osgr"), crs = 27700 ) |> #crs identifies map for the UK 
+  # Select relevant columns
+  select(accident_index, date, speed_limit, accident_severity)
+```
+
+
+
+## Handling Missing Data
+
+There is no single strategy for dealing with missing data. The approach you adopt depends on the context. A simple strategy to impute missing data is to use a constant value. The following example uses the median value to fill missing speed limits, which might be a valid approach if your dataset contains very similar road types.
+
+```{r}
+#| label: cleaning-missing-data
+#| eval: false
+library(osmextract)
+
+# Check for missing values
+summary(collisions_clean)
+
+# Impute order(..., na.last = TRUE, decreasing = FALSE) remove missing values
+collisions_clean = collisions_clean |>
+  mutate(speed_limit ifelse(is.na(speed_limit), median(speed_limit, na.rm = TRUE), speed_limit))
 
 ```
 
 
+
+# Exercises
+
+My answers to the exercises based on work above!
+
+## Download and Explore STATS19 Data
+
+1. Download road traffic collision data for 2019 using the stats19 package.
+
+```{r}
+#| label: exercises11
+#| eval: false
+library(stats19)
+
+collisions19 = get_stats19(year = 2019, type = "collisions"
+)
+
+```
+
+2. Explore the structure of the data using 'str()' and 'summary()'
+
+```{r}
+#| label: exercises12
+#| eval: false
+str(collisions19)
+summary(collisions19)
+```
+
+
+3. Create a simple plot showing number of collisions by severity
+
+```{r}
+#| label: exercises13
+#| eval: false
+collisions19 |>
+  group_by(accident_severity) |>
+  summarise(count = n()) |>
+  ggplot(aes(x = accident_severity, y = count))
+
+```

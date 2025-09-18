@@ -1,0 +1,84 @@
+---
+title: "Checks"
+---
+
+
+## From Session 1
+
+```{r}
+#| label: r-test
+#| output: false
+options(repos = c(CRAN = "https://cloud.r-project.org"))
+if (!require("pYak")) install.packages("pak")
+pkgs = c(
+  "sf",
+  "tidyverse",
+  "osmextract",
+  "tmap",
+  "maptiles",
+  "stats19",
+  "pct"
+)
+pak::pkg_install(pkgs)
+```
+
+```{r}
+#| label: r-test1
+#| output: false
+sapply(pkgs, require, character.only = TRUE)
+
+```
+
+
+## From Prerequisites
+
+```{r}
+#| label: r-test2
+#| message: false
+#| warning: false
+#| results: hide
+options(repos = c(CRAN = "https://cloud.r-project.org"))
+if (!require("pak")) install.packages("pak")
+pkgs = c(
+    "sf",
+    "tidyverse",
+    "tmap",
+    "stats19",
+    "stplanr",
+    "osmextract",
+    "zonebuilder"
+)
+pak::pak(pkgs)
+```
+
+```{r}
+#| label: r-test3
+#| message: false
+#| warning: false
+#| results: hide
+library(tidyverse)
+zones = zonebuilder::zb_zone("Leeds", n_circles = 3)
+study_area = zones |>
+  sf::st_union()
+extra_tags = c(
+  "maxspeed",
+  "lit",
+  "cycleway"
+)
+osm_network = osmextract::oe_get(
+  place = "Leeds, UK",
+  boundary = study_area,
+  boundary_type = "clipsrc",
+  extra_tags = extra_tags
+)
+```
+
+```{r}
+#| label: r-test-leeds
+osm_network |>
+  select(maxspeed) |>
+  plot()
+sf::write_sf(study_area, "leeds_study_area.geojson")
+```
+
+
