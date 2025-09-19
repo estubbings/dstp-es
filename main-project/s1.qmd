@@ -86,7 +86,7 @@ Below is code to download the cycleways in North Yorkshire and creating a map sh
 
 ```{r}
 #| label: download-cycle
-#| eval: false 
+#| eval : false
 library(osmextract)
 library(sf)
 
@@ -97,8 +97,10 @@ north_yorkshire_cycleways = oe_get(
   extra_tags = c("maxspeed", "lit", "cycleway"),
   query = "SELECT * FROM lines WHERE highway IN ('cycleway', 'path')" #SQL syntax for identifying data
 )
+
 plot(st_geometry(north_yorkshire_cycleways))
 ```
+
 
 We can also download other spatial data. E.g. the code below downloads amenities.
 
@@ -107,7 +109,9 @@ The "#| eval: false" line tells quarto to show the code but not evaluate it when
 
 ```{r}
 #| label: download-amenity
-#| eval: false 
+#| message: false
+#| warning: false
+#| results: hide
 library(osmextract)
 library(sf)
 
@@ -117,6 +121,9 @@ west_yorkshire_amenities = oe_get(
   place = "West Yorkshire",
   extra_tags = c("amenity")
 )
+```
+
+```{r}
 plot(st_geometry(west_yorkshire_amenities))
 ```
 
@@ -130,23 +137,17 @@ Edited to use 2022 data.
 
 ```{r}
 #| label: download-stats19
-#| eval: false 
+#| message: false
+#| warning: false
+#| results: hide
 library(stats19)
 
 # Download 2022 collision data
-collisions = get_stats19(year = 2022, type = "collisions")
-```
+collisions = get_stats19(year = 2022, type = "collision")
 
-```{r}
-#| label: download-stats191
-#| eval: false 
 # Download casualty data
 casualties = get_stats19(year = 2022, type = "cas")
-```
 
-```{r}
-#| label: download-stats192
-#| eval: false 
 # Download vehicle data
 vehicles = get_stats19(year = 2022, type = "veh")
 ```
@@ -160,7 +161,6 @@ Below downloads desire lines (of cycling) for Manchester. Print the local author
 
 ```{r}
 #| label: download-odd
-#| eval: false 
 library(pct)
 
 # Downloads desire lines for Manchester
@@ -177,7 +177,9 @@ Load the data directly from https://geoportal.statistics.gov.uk/ as follows.
 
 ```{r}
 #| label: download-census
-#| eval: false 
+#| message: false
+#| warning: false
+#| results: hide
 
 library(sf)
 # Download LSOA boundaries
@@ -199,7 +201,6 @@ Once downloaded, data often needs cleaning for missing values, inconsistent form
 
 ```{r}
 #| label: cleaning-basic
-#| eval: false
 
 # Clean collision data
 collisions_clean = collisions |> 
@@ -219,15 +220,13 @@ There is no single strategy for dealing with missing data. The approach you adop
 
 ```{r}
 #| label: cleaning-missing-data
-#| eval: false
 library(osmextract)
 
 # Check for missing values
 summary(collisions_clean)
-
-# Impute order(..., na.last = TRUE, decreasing = FALSE) remove missing values
+# Impute or remove missing values
 collisions_clean = collisions_clean |>
-  mutate(speed_limit ifelse(is.na(speed_limit), median(speed_limit, na.rm = TRUE), speed_limit))
+  mutate(speed_limit = ifelse(is.na(speed_limit), median(speed_limit, na.rm = TRUE), speed_limit))
 
 ```
 
@@ -243,10 +242,9 @@ My answers to the exercises based on work above!
 
 ```{r}
 #| label: exercises11
-#| eval: false
 library(stats19)
 
-collisions19 = get_stats19(year = 2019, type = "collisions"
+collisions19 = get_stats19(year = 2019, type = "collision"
 )
 
 ```
@@ -255,27 +253,9 @@ collisions19 = get_stats19(year = 2019, type = "collisions"
 
 ```{r}
 #| label: exercises12
-#| eval: false
 str(collisions19)
 summary(collisions19)
 ```
 
 
-3. Create a simple plot showing number of collisions by severity
 
-```{r}
-#| label: exercises13
-#| eval: false
-collisions19 |>
-  group_by(accident_severity) |>
-  summarise(count = n()) |>
-  ggplot(aes(x = accident_severity, y = count, fill = accident_severity)) +
-  geom_col() +
-  labs(
-    title = "Number of Collisions by Severity (2019)",
-    x = "Accident Severity",
-    y = "Number of Collisions"
-  ) +
-  theme_minimal() +
-  theme(legend.position = "none")
-```

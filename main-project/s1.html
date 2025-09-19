@@ -101,7 +101,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <section id="introduction" class="level1">
 <h1>Introduction</h1>
-<p>In this session, we will explore how to find, download, import, and clean transport-related datasets. Transport data comes from various sources such as government agencies, open data portals, and crowd-sourced platforms. We will learn practical techniques using R to access and prepare this data for analysis.</p>
+<p>This session explores how to find, download, import, and clean transport-related datasets. Transport data comes from various sources such as government agencies, open data portals, and crowd-sourced platforms. We will learn practical techniques using R to access and prepare this data for analysis.</p>
 <p>This session covers:</p>
 <ul>
 <li>Downloading datasets from OpenStreetMap</li>
@@ -183,7 +183,8 @@ this dataset.</code></pre>
 <span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">extra_tags =</span> <span class="fu">c</span>(<span class="st">"maxspeed"</span>, <span class="st">"lit"</span>, <span class="st">"cycleway"</span>),</span>
 <span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">query =</span> <span class="st">"SELECT * FROM lines WHERE highway IN ('cycleway', 'path')"</span> <span class="co">#SQL syntax for identifying data</span></span>
 <span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">st_geometry</span>(north_yorkshire_cycleways))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">st_geometry</span>(north_yorkshire_cycleways))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>We can also download other spatial data. E.g. the code below downloads amenities.</p>
 <p>The “#| eval: false” line tells quarto to show the code but not evaluate it when rendering the document, as we don’t need amenities for this project.</p>
@@ -196,8 +197,17 @@ this dataset.</code></pre>
 <span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">layer =</span> <span class="st">"points"</span>, <span class="co">#We want the point location</span></span>
 <span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">place =</span> <span class="st">"West Yorkshire"</span>,</span>
 <span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">extra_tags =</span> <span class="fu">c</span>(<span class="st">"amenity"</span>)</span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">st_geometry</span>(west_yorkshire_amenities))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">st_geometry</span>(west_yorkshire_amenities))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="s1_files/figure-html/unnamed-chunk-1-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
 </div>
 <p>Below is some additional code using dplyr that can be used to get a table showing how many of each amenity there are, e.g.&nbsp;66 banks and 376 atms.</p>
 </section>
@@ -206,18 +216,16 @@ this dataset.</code></pre>
 <p>Data on colliosions, casualties and vehicles from the DfT.</p>
 <p>Edited to use 2022 data.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(stats19)</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Download 2022 collision data</span></span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>collisions <span class="ot">=</span> <span class="fu">get_stats19</span>(<span class="at">year =</span> <span class="dv">2022</span>, <span class="at">type =</span> <span class="st">"collisions"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Download casualty data</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>casualties <span class="ot">=</span> <span class="fu">get_stats19</span>(<span class="at">year =</span> <span class="dv">2022</span>, <span class="at">type =</span> <span class="st">"cas"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Download vehicle data</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>vehicles <span class="ot">=</span> <span class="fu">get_stats19</span>(<span class="at">year =</span> <span class="dv">2022</span>, <span class="at">type =</span> <span class="st">"veh"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(stats19)</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Download 2022 collision data</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>collisions <span class="ot">=</span> <span class="fu">get_stats19</span>(<span class="at">year =</span> <span class="dv">2022</span>, <span class="at">type =</span> <span class="st">"collision"</span>)</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Download casualty data</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>casualties <span class="ot">=</span> <span class="fu">get_stats19</span>(<span class="at">year =</span> <span class="dv">2022</span>, <span class="at">type =</span> <span class="st">"cas"</span>)</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Download vehicle data</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>vehicles <span class="ot">=</span> <span class="fu">get_stats19</span>(<span class="at">year =</span> <span class="dv">2022</span>, <span class="at">type =</span> <span class="st">"veh"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 <section id="origin-destination-data" class="level2">
@@ -225,12 +233,20 @@ this dataset.</code></pre>
 <p>The ‘pct’ package provides access to the Propensity to Cycle Tool data, which includes origin-destination flows.</p>
 <p>Below downloads desire lines (of cycling) for Manchester. Print the local authorities to ensure that manchester was correctly identified.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(pct)</span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Downloads desire lines for Manchester</span></span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>manchester_desire_lines <span class="ot">=</span> <span class="fu">get_pct_lines</span>(<span class="at">region =</span> <span class="st">"greater-manchester"</span>)</span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">unique</span>(manchester_desire_lines<span class="sc">$</span>lad_name1))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(pct)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Downloads desire lines for Manchester</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>manchester_desire_lines <span class="ot">=</span> <span class="fu">get_pct_lines</span>(<span class="at">region =</span> <span class="st">"greater-manchester"</span>)</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">unique</span>(manchester_desire_lines<span class="sc">$</span>lad_name1))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> [1] "Bolton"                "Bury"                  "Manchester"           
+ [4] "Oldham"                "Rochdale"              "Salford"              
+ [7] "Stockport"             "Tameside"              "Trafford"             
+[10] "Wigan"                 "Warrington"            "Blackburn with Darwen"
+[13] "Cheshire East"         "High Peak"             "Chorley"              
+[16] "Rossendale"           </code></pre>
+</div>
 </div>
 </section>
 <section id="boundary-and-census-data" class="level2">
@@ -270,11 +286,26 @@ this dataset.</code></pre>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(osmextract)</span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Check for missing values</span></span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(collisions_clean)</span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Impute order(..., na.last = TRUE, decreasing = FALSE) remove missing values</span></span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>collisions_clean <span class="ot">=</span> collisions_clean <span class="sc">|&gt;</span></span>
-<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(speed_limit <span class="fu">ifelse</span>(<span class="fu">is.na</span>(speed_limit), <span class="fu">median</span>(speed_limit, <span class="at">na.rm =</span> <span class="cn">TRUE</span>), speed_limit))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(collisions_clean)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> accident_index          date            speed_limit        accident_severity 
+ Length:105982      Min.   :2022-01-01   Length:105982      Length:105982     
+ Class :character   1st Qu.:2022-04-04   Class :character   Class :character  
+ Mode  :character   Median :2022-07-04   Mode  :character   Mode  :character  
+                    Mean   :2022-07-03                                        
+                    3rd Qu.:2022-10-03                                        
+                    Max.   :2022-12-31                                        
+          geometry     
+ POINT        :105982  
+ epsg:27700   :     0  
+ +proj=tmer...:     0  
+                       
+                       
+                       </code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Impute or remove missing values</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>collisions_clean <span class="ot">=</span> collisions_clean <span class="sc">|&gt;</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">speed_limit =</span> <span class="fu">ifelse</span>(<span class="fu">is.na</span>(speed_limit), <span class="fu">median</span>(speed_limit, <span class="at">na.rm =</span> <span class="cn">TRUE</span>), speed_limit))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 </section>
@@ -287,13 +318,224 @@ this dataset.</code></pre>
 <li>Download road traffic collision data for 2019 using the stats19 package.</li>
 </ol>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(stats19)</span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>collisions19 <span class="ot">=</span> <span class="fu">get_stats19</span>(<span class="at">year =</span> <span class="dv">2019</span>, <span class="at">type =</span> collisions)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(stats19)</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>collisions19 <span class="ot">=</span> <span class="fu">get_stats19</span>(<span class="at">year =</span> <span class="dv">2019</span>, <span class="at">type =</span> <span class="st">"collision"</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Files identified: dft-road-casualty-statistics-collision-2019.csv</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>   https://data.dft.gov.uk/road-accidents-safety-data/dft-road-casualty-statistics-collision-2019.csv</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Data saved at /var/folders/g5/tzxh_kjx6tq7lqcgzp9mf4qm0000gn/T//Rtmpvh4OWb/dft-road-casualty-statistics-collision-2019.csv</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Reading in: </code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>/var/folders/g5/tzxh_kjx6tq7lqcgzp9mf4qm0000gn/T//Rtmpvh4OWb/dft-road-casualty-statistics-collision-2019.csv</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>date and time columns present, creating formatted datetime column</code></pre>
+</div>
 </div>
 <ol start="2" type="1">
 <li>Explore the structure of the data using ‘str()’ and ‘summary()’</li>
 </ol>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(collisions19)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>spc_tbl_ [117,536 × 38] (S3: spec_tbl_df/tbl_df/tbl/data.frame)
+ $ accident_index                             : chr [1:117536] "2019010128300" "2019010152270" "2019010155191" "2019010155192" ...
+ $ accident_year                              : int [1:117536] 2019 2019 2019 2019 2019 2019 2019 2019 2019 2019 ...
+ $ accident_reference                         : chr [1:117536] "010128300" "010152270" "010155191" "010155192" ...
+ $ location_easting_osgr                      : int [1:117536] 528218 530219 530222 525531 524920 540188 532424 532773 548535 522267 ...
+ $ location_northing_osgr                     : int [1:117536] 180407 172463 182543 184605 184004 185266 164886 178460 188113 168185 ...
+ $ longitude                                  : int [1:117536] NA NA NA NA NA NA NA NA NA NA ...
+ $ latitude                                   : int [1:117536] NA NA NA NA NA NA NA NA NA NA ...
+ $ police_force                               : chr [1:117536] "Metropolitan Police" "Metropolitan Police" "Metropolitan Police" "Metropolitan Police" ...
+ $ accident_severity                          : chr [1:117536] "Slight" "Slight" "Slight" "Serious" ...
+ $ number_of_vehicles                         : chr [1:117536] "2" "2" "2" "1" ...
+ $ number_of_casualties                       : chr [1:117536] "3" "1" "1" "1" ...
+ $ date                                       : Date[1:117536], format: "2019-02-18" "2019-01-15" ...
+ $ day_of_week                                : chr [1:117536] "Monday" "Tuesday" "Tuesday" "Tuesday" ...
+ $ time                                       : chr [1:117536] "17:50" "21:45" "01:50" "01:20" ...
+ $ local_authority_district                   : chr [1:117536] "Westminster" "Lambeth" "Camden" "Camden" ...
+ $ local_authority_ons_district               : chr [1:117536] "Westminster" "Lambeth" "Camden" "Camden" ...
+ $ local_authority_highway                    : chr [1:117536] "Westminster" "Lambeth" "Camden" "Camden" ...
+ $ first_road_class                           : chr [1:117536] "A" "A" "B" "B" ...
+ $ first_road_number                          : chr [1:117536] "4202" "23" "504" "510" ...
+ $ road_type                                  : chr [1:117536] "Roundabout" "One way street" "Single carriageway" "Single carriageway" ...
+ $ speed_limit                                : chr [1:117536] "30" "30" "30" "20" ...
+ $ junction_detail                            : chr [1:117536] "Roundabout" "Not at junction or within 20 metres" "T or staggered junction" "T or staggered junction" ...
+ $ junction_control                           : chr [1:117536] "Auto traffic signal" "Data missing or out of range" "Give way or uncontrolled" "Give way or uncontrolled" ...
+ $ second_road_class                          : chr [1:117536] "A" "Not at junction or within 20 metres" "Unclassified" "B" ...
+ $ second_road_number                         : chr [1:117536] "4202" "Unknown" "first_road_class is C or Unclassified. These roads do not have official numbers so recorded as zero" "510" ...
+ $ pedestrian_crossing_human_control          : chr [1:117536] "None within 50 metres" "unknown (self reported)" "None within 50 metres" "None within 50 metres" ...
+ $ pedestrian_crossing_physical_facilities    : chr [1:117536] "Pedestrian phase at traffic signal junction" "unknown (self reported)" "No physical crossing facilities within 50 metres" "No physical crossing facilities within 50 metres" ...
+ $ light_conditions                           : chr [1:117536] "Daylight" "Darkness - lights lit" "Darkness - lights lit" "Darkness - lights lit" ...
+ $ weather_conditions                         : chr [1:117536] "Fine no high winds" "Fine no high winds" "Fine no high winds" "Fine no high winds" ...
+ $ road_surface_conditions                    : chr [1:117536] "Dry" "Dry" "Dry" "Dry" ...
+ $ special_conditions_at_site                 : chr [1:117536] "None" "None" "None" "None" ...
+ $ carriageway_hazards                        : chr [1:117536] "None" "None" "None" "None" ...
+ $ urban_or_rural_area                        : chr [1:117536] "Urban" "Urban" "Urban" "Urban" ...
+ $ did_police_officer_attend_scene_of_accident: chr [1:117536] "No - accident was reported using a self completion  form (self rep only)" "No - accident was reported using a self completion  form (self rep only)" "Yes" "Yes" ...
+ $ trunk_road_flag                            : chr [1:117536] "Non-trunk" "Non-trunk" "Non-trunk" "Non-trunk" ...
+ $ lsoa_of_accident_location                  : chr [1:117536] "E01004762" "E01003117" "E01000943" "E01000973" ...
+ $ enhanced_severity_collision                : num [1:117536] -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 ...
+ $ datetime                                   : POSIXct[1:117536], format: "2019-02-18 17:50:00" "2019-01-15 21:45:00" ...
+ - attr(*, "spec")=
+  .. cols(
+  ..   accident_index = col_character(),
+  ..   accident_year = col_integer(),
+  ..   accident_reference = col_character(),
+  ..   location_easting_osgr = col_integer(),
+  ..   location_northing_osgr = col_integer(),
+  ..   longitude = col_integer(),
+  ..   latitude = col_integer(),
+  ..   police_force = col_character(),
+  ..   accident_severity = col_character(),
+  ..   number_of_vehicles = col_character(),
+  ..   number_of_casualties = col_character(),
+  ..   date = col_character(),
+  ..   day_of_week = col_character(),
+  ..   time = col_character(),
+  ..   local_authority_district = col_character(),
+  ..   local_authority_ons_district = col_character(),
+  ..   local_authority_highway = col_character(),
+  ..   first_road_class = col_character(),
+  ..   first_road_number = col_character(),
+  ..   road_type = col_character(),
+  ..   speed_limit = col_character(),
+  ..   junction_detail = col_character(),
+  ..   junction_control = col_character(),
+  ..   second_road_class = col_character(),
+  ..   second_road_number = col_character(),
+  ..   pedestrian_crossing_human_control = col_character(),
+  ..   pedestrian_crossing_physical_facilities = col_character(),
+  ..   light_conditions = col_character(),
+  ..   weather_conditions = col_character(),
+  ..   road_surface_conditions = col_character(),
+  ..   special_conditions_at_site = col_character(),
+  ..   carriageway_hazards = col_character(),
+  ..   urban_or_rural_area = col_character(),
+  ..   did_police_officer_attend_scene_of_accident = col_character(),
+  ..   trunk_road_flag = col_character(),
+  ..   lsoa_of_accident_location = col_character(),
+  ..   enhanced_severity_collision = col_double()
+  .. )
+ - attr(*, "problems")=&lt;externalptr&gt; </code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(collisions19)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> accident_index     accident_year  accident_reference location_easting_osgr
+ Length:117536      Min.   :2019   Length:117536      Min.   : 64084       
+ Class :character   1st Qu.:2019   Class :character   1st Qu.:388018       
+ Mode  :character   Median :2019   Mode  :character   Median :459396       
+                    Mean   :2019                      Mean   :452403       
+                    3rd Qu.:2019                      3rd Qu.:529373       
+                    Max.   :2019                      Max.   :655244       
+                                                      NA's   :28           
+ location_northing_osgr   longitude         latitude      police_force      
+ Min.   :  10814        Min.   : NA      Min.   : NA      Length:117536     
+ 1st Qu.: 175526        1st Qu.: NA      1st Qu.: NA      Class :character  
+ Median : 218465        Median : NA      Median : NA      Mode  :character  
+ Mean   : 278686        Mean   :NaN      Mean   :NaN                        
+ 3rd Qu.: 384804        3rd Qu.: NA      3rd Qu.: NA                        
+ Max.   :1167366        Max.   : NA      Max.   : NA                        
+ NA's   :28             NA's   :117536   NA's   :117536                     
+ accident_severity  number_of_vehicles number_of_casualties
+ Length:117536      Length:117536      Length:117536       
+ Class :character   Class :character   Class :character    
+ Mode  :character   Mode  :character   Mode  :character    
+                                                           
+                                                           
+                                                           
+                                                           
+      date            day_of_week            time          
+ Min.   :2019-01-01   Length:117536      Length:117536     
+ 1st Qu.:2019-04-06   Class :character   Class :character  
+ Median :2019-07-08   Mode  :character   Mode  :character  
+ Mean   :2019-07-06                                        
+ 3rd Qu.:2019-10-06                                        
+ Max.   :2019-12-31                                        
+                                                           
+ local_authority_district local_authority_ons_district local_authority_highway
+ Length:117536            Length:117536                Length:117536          
+ Class :character         Class :character             Class :character       
+ Mode  :character         Mode  :character             Mode  :character       
+                                                                              
+                                                                              
+                                                                              
+                                                                              
+ first_road_class   first_road_number   road_type         speed_limit       
+ Length:117536      Length:117536      Length:117536      Length:117536     
+ Class :character   Class :character   Class :character   Class :character  
+ Mode  :character   Mode  :character   Mode  :character   Mode  :character  
+                                                                            
+                                                                            
+                                                                            
+                                                                            
+ junction_detail    junction_control   second_road_class  second_road_number
+ Length:117536      Length:117536      Length:117536      Length:117536     
+ Class :character   Class :character   Class :character   Class :character  
+ Mode  :character   Mode  :character   Mode  :character   Mode  :character  
+                                                                            
+                                                                            
+                                                                            
+                                                                            
+ pedestrian_crossing_human_control pedestrian_crossing_physical_facilities
+ Length:117536                     Length:117536                          
+ Class :character                  Class :character                       
+ Mode  :character                  Mode  :character                       
+                                                                          
+                                                                          
+                                                                          
+                                                                          
+ light_conditions   weather_conditions road_surface_conditions
+ Length:117536      Length:117536      Length:117536          
+ Class :character   Class :character   Class :character       
+ Mode  :character   Mode  :character   Mode  :character       
+                                                              
+                                                              
+                                                              
+                                                              
+ special_conditions_at_site carriageway_hazards urban_or_rural_area
+ Length:117536              Length:117536       Length:117536      
+ Class :character           Class :character    Class :character   
+ Mode  :character           Mode  :character    Mode  :character   
+                                                                   
+                                                                   
+                                                                   
+                                                                   
+ did_police_officer_attend_scene_of_accident trunk_road_flag   
+ Length:117536                               Length:117536     
+ Class :character                            Class :character  
+ Mode  :character                            Mode  :character  
+                                                               
+                                                               
+                                                               
+                                                               
+ lsoa_of_accident_location enhanced_severity_collision
+ Length:117536             Min.   :-1.000             
+ Class :character          1st Qu.:-1.000             
+ Mode  :character          Median :-1.000             
+                           Mean   : 1.005             
+                           3rd Qu.: 3.000             
+                           Max.   : 7.000             
+                                                      
+    datetime                     
+ Min.   :2019-01-01 00:06:00.00  
+ 1st Qu.:2019-04-06 10:17:15.00  
+ Median :2019-07-08 09:44:00.00  
+ Mean   :2019-07-06 16:33:59.33  
+ 3rd Qu.:2019-10-06 00:02:30.00  
+ Max.   :2019-12-31 23:53:00.00  
+                                 </code></pre>
+</div>
+</div>
 </section>
 </section>
 

@@ -1,0 +1,214 @@
+---
+title: "OD Transport Data Visualization"
+format: html
+---
+
+# Spatio-temporal data with OD data
+
+This exercise is based on the tutorial "Analysing massive open human mobility data in R using spanishoddata, duckdb and flowmaps" by Egor Kotov.
+
+This is a more advanced exercise that benefits from having a fast internet connection, decent compute resources, and an interest in the Iberian Peninsula.
+
+See [ekotov.pro](https://www.ekotov.pro/agit-2025-spanishoddata/) for details.
+
+# Spanish OD Data
+
+## Example map creation
+
+```{r}
+options(repos = c(CRAN = "https://cloud.r-project.org"))
+packages <- c(
+  "spanishoddata",
+  "flowmapper",
+  "flowmapblue",
+  "tidyverse",
+  "mapview",
+  "leafgl",
+  "patchwork",
+  "sf",
+  "basemaps",
+  "ggnewscale"
+)
+
+install.packages(packages)
+rm(packages)
+
+
+```
+
+```{r}
+# This code chunk creates an interactive flow map for Seville
+# demonstrating animation and time-filtering capabilities
+# It is based on the vignette from the rOpenSpain/spanishoddata package.
+
+# --- 1. Load necessary libraries ---
+library(spanishoddata)
+library(flowmapblue)
+library(tidyverse)
+library(sf)
+
+# --- 2. Set up Mapbox Access Token (required for the basemap) ---
+# Get a free token from https://account.mapbox.com/access-tokens/
+Sys.setenv(MAPBOX_TOKEN = "pk.eyJ1IjoiZWxsYXN0dWJiaW5ncyIsImEiOiJjbWZxa2tvZTEwdGl2MmtyMmpuMnNpNzB2In0.O1IVyRdxM30sm60LFb6f1w")
+
+# --- 3. Download and prepare the data ---
+
+# Get OD data for a typical day in 2021
+zones <- spod_get_zones(zones = "distr", ver = 2)
+valid_dates <- spod_get_valid_dates(2)
+recent_dates = tail(valid_dates, 3)
+flows <- spod_get(
+  type = "origin-destination",
+  zones = "districts",
+  dates = recent_dates
+)
+
+```
+
+
+```{r}
+
+# --- 4. Process the OD data to create a timestamp for each flow ---
+od_data_time <- flows |>
+    mutate(time = as.POSIXct(paste0(date, "T", hour, ":00:00"))) |>
+    group_by(origin = id_origin, dest = id_destination, time) |>
+    summarise(count = sum(n_trips, na.rm = TRUE), .groups = "drop") |>
+    collect()
+
+
+```
+
+```{r}
+# --- 5. Filter data for the Seville region ---
+# Identify zones corresponding to Seville
+zones_seville <- zones |>
+    filter(grepl("^Sevilla distrito", name, ignore.case = TRUE))
+    mapview::mapview(zones_seville)
+
+```
+
+```{r}
+# Create a 10km buffer to define the Functional Urban Area (FUA)
+zones_seville_fua <- zones[st_buffer(zones_seville, dist = 10000), ]
+plot(st_geometry(zones_seville_fua))
+
+```
+
+```{r}
+# Prepare the location data (centroids) for the flow map
+sf::sf_use_s2(FALSE)
+locations_seville <- zones_seville_fua |>
+    st_transform(crs = 4326) |>
+    st_centroid() |>
+    st_coordinates() |>
+    as.data.frame() |>
+    mutate(id = zones_seville_fua$id) |>
+    rename(lon = X, lat = Y)
+
+# Filter the time-based OD data to include only flows within the Seville
+flows_seville_time <- od_data_time |>
+    filter(origin %in% zones_seville_fua$id & dest %in% zones_seville_fua$id)
+
+#Filter the time-based OD data to include only flows within the Seville FUA
+flows_seville_time <- od_data_time |>
+    filter(origin %in% zones_seville_fua$id & dest %in% zones_seville_fua$id)
+
+```
+
+```{r}
+# --- 6. Generate the interactive flow map ---
+# Create the plot with animation and clustering enabled. 
+# The resulting map will have a time slider to filter flows by hour.
+flowmap_seville_interactive <- flowmapblue(
+    locations = locations_seville,
+    flows = flows_seville_time,
+    mapboxAccessToken = "pk.eyJ1IjoiZWxsYXN0dWJiaW5ncyIsImEiOiJjbWZxa2tvZTEwdGl2MmtyMmpuMnNpNzB2In0.O1IVyRdxM30sm60LFb6f1w",
+    darkMode = TRUE,
+    animation = FALSE,
+    clustering = TRUE
+)
+
+# Display the map
+flowmap_seville_interactive
+```
+
+
+```{r}
+# Save the map as an HTML file
+htmlwidgets::saveWidget(flowmap_seville_interactive, "seville_flowmap.html")
+system("firefox seville_flowmap.html")
+fs:file_size("seville_flowmap.html")
+system("gh release create")
+system("gh release upload v1 seville_flowmap.html")
+```
+
+
+# Stats19 crashes data 
+
+```{r}
+library(stats19)
+library(tidyverse)
+library(lubridate)
+
+```
+
+```{r}
+# Download collisions for 2020 and 2021
+collisions_20 = get_stats19(year = 2020, type = "collision")
+collisions_21 = get_stats19(year = 2021, type = "collision")
+```
+
+
+```{r}
+# Explore dataset
+colnames(collisions_20)
+```
+
+```{r}
+library(sf)
+# Prep data for plotting map
+collisions_sf20 <- collisions_20 |>
+    filter(!is.na(location_easting_osgr), !is.na(location_northing_osgr)) |>
+    st_as_sf(coords = c("location_easting_osgr", "location_northing_osgr" ))
+```
+
+Create collision hotspot clusters. 
+
+```{r}
+coords <- st_coordinates(collisions_sf20)
+
+# Round to nearest 100 metres
+collisions_sf20 <- collisions_sf20 |>
+    mutate(
+        x_rounded = round(coords[,1], -2),
+        y_rounded = round(coords[,2], -2))
+
+hotspots <- collisions_sf20 |>
+    group_by(x_rounded, y_rounded) |>
+    summarise(count = n(), .groups = "drop") |>
+    st_as_sf(coords = c("x_rounded", "y_rounded"), crs = 27700)
+```
+
+
+Trans
+
+
+```{r}
+hotspots <- st_transform(hotspots, 4326)
+
+```
+
+```{r}
+ggplot(hotspots) +
+  geom_sf(aes(size = count, color = count)) +
+  scale_color_viridis_c() +
+  theme_minimal() +
+  labs(
+    title = "UK Road Collision Hotspots (2020)",
+    size = "Number of Collisions",
+    color = "Number of Collisions"
+  )
+
+
+
+```

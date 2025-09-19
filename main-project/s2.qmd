@@ -50,7 +50,6 @@ OpenTripPlanner (OTP) is a powerful open-source routing engine that supports mul
 
 ```{r}
 #| label: otp-con
-#| eval: false
 otpcon = otp_connect(
     hostname = "otp.robinlovelace.net",
     ssl = TRUE,
@@ -63,15 +62,20 @@ otpcon = otp_connect(
 ## Basic Routing
 ```{r}
 #| label: otp-sing
-#| eval: false
- 
- # Create a simple walking route
+tmap_mode("view")
+
+ # Create a simple walking route from ITS Leeds to Leeds Railway Station 
+from = stplanr::geo_code("Institute for Transport Studies, Leeds")
+to = stplanr::geo_code("Leeds Railway Station")
+
+
  route_walk = otp_plan(
     otpcon = otpcon,
-    fromPlace = c(-1.55555, 53.81005), #long, lat
+    fromPlace = c(-1.559, 53.8079), #long, lat
     toPlace = c(-1.54710, 53.79519),
     mode = "WALK"
  )
+ qtm(route_walk)
 
 ```
 
@@ -79,24 +83,27 @@ otpcon = otp_connect(
 
 ```{r}
 #| label: otp-multi
-#| eval: false
 
 # Public transport route
 route_transit = otp_plan(
   otpcon = otpcon,
-  fromPlace = c(-1.55555, 53.81005),
+  fromPlace = c(-1.559, 53.8079),
   toPlace = c(-1.54710, 53.79519),
   mode = c("WALK", "TRANSIT")
 )
+qtm(route_transit)
+```
 
+
+```{r}
 # Cycling with public transport
 route_bike_transit = otp_plan(
   otpcon = otpcon,
-  fromPlace = c(-1.55555, 53.81005),
+  fromPlace = c(-1.559, 53.8079),
   toPlace = c(-1.54710, 53.79519),
   mode = c("BICYCLE", "TRANSIT")
 )
-
+qtm(route_bike_transit)
 ```
 
 # Working with desire lines
