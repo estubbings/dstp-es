@@ -362,6 +362,56 @@ tm_shape(change_to_plot) +
   tm_layout(legend.outside = TRUE)
 
 
+```
+
+```{r}
+# Load background geographic features for context
+rivers = st_read("https://github.com/itsleeds/tds/releases/download/2025/p3-london-rivers.geojson")
+
+parks = st_read("https://github.com/itsleeds/tds/releases/download/2025/p3-london-parks.geojson")
+
+# Preview the background features
+ggplot() +
+  geom_sf(data = parks, fill = "#d9f5e0", color = "#d9f5e0") +    # Light green for parks
+  geom_sf(data = rivers, color = "#08D9D6", linewidth = 3) +      # Cyan for River Thames
+  theme_void()
+```
+
+
+```{r}
+
+# Define the O-D pairs to visualize (increases of 1+ trips)
+change_to_plot = change_desire_lines |>
+  filter(count_change >= 1) |>
+  arrange(count_change)
+
+# Create comprehensive map with background context and O-D flows
+ggplot() +
+  # Add background features first (they appear behind other layers)
+  geom_sf(data = parks, fill = "#d9f5e0", color = "#d9f5e0") +    # Parks as light green areas
+  geom_sf(data = rivers, color = "#08D9D6", linewidth = 3) +      # River Thames in cyan
+  
+  # Add the desire lines showing changes in bike trips
+  geom_sf(
+    data = change_to_plot,
+    aes(
+      colour = count_change,        # Color intensity shows magnitude of change
+      alpha = count_change,         # Transparency shows magnitude of change
+      linewidth = count_change      # Line thickness shows magnitude of change
+    )
+  ) +
+  scale_colour_viridis_c(option = "C") +                          # Viridis color scale
+  scale_linewidth_binned(range = c(0.01, 1.6), guide = "legend") +
+  scale_alpha(range = c(0.001, 0.7), guide = "legend") +
+  annotation_scale(location = "br", width_hint = 0.3) +           # Scale bar
+  annotation_north_arrow(
+    location = "tl", which_north = "true",
+    style = north_arrow_fancy_orienteering()
+  ) +                                                              # North arrow
+theme_void()
+
+
+
 
 ```
 
